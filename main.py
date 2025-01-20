@@ -27,6 +27,8 @@ fb2file = Path(__file__).parent.resolve() / config_env['FILE']
 api_key = config_env['API_KEY']  # This is the default and can be omitted
 base_url = config_env['API_BASE']
 
+
+
 if __name__ == '__main__':
     # 1 Получить переменные и файл
     # result = FBr.FB2am(fb2file).parcer()
@@ -34,18 +36,20 @@ if __name__ == '__main__':
     # Открыть файл и Распарсить файл
     print(book.get_isbn())
     print(book.get_title())
-    print(book.get_description())
+    #print(book.get_description())
     print(book.get_lang())
-    print(book.get_identifier())
-    print(book.get_series())
-    print(book.get_authors())
-    print(book.get_tags())
+    ##print(book.get_identifier())
+    #print(book.get_series())
+    #print(book.get_authors())
+    #print(book.get_tags())
     print(book.get_translators())
 
     # print(book.get_cover_image())
-    print(book.get_body())
+    #print(book.get_body_parsed())
     # Взать FBAM парсилку для body
-
+    #body_with_tags = book.get_body_parsed()
+    #body_with_tags_tuples = list(map(lambda x: (x[0], x[1]),body_with_tags))
+    #print(book.get_body())
     # author_name = result._title_info['author'].get('last-name', '') + ' ' + result._title_info['author'].get('first-name', '')
     # book_title = result._title_info['book-title']
     # print(book_title)
@@ -58,10 +62,45 @@ if __name__ == '__main__':
     # Translate meta
     # Improve pictures
     # Chunking and translate body (stream)
+    body, total_text_length = book.get_body()
+    count = len(body)
+    #print_body_structure(body)
+    print("Total text length in sections:", total_text_length, "Body main sec", count)
+
+    for element in body:
+        tag_name = element[0]
+        content = element[1]
+        if tag_name == 'section':
+            section_length = element[2]
+            print(f"Section text Length: {section_length}")
+        #else:
+        #    print() #f"{tag_name}:")
+
+        for sub_element in content:
+            sub_tag_name = sub_element[0]
+            if sub_tag_name == 'text':
+                text = sub_element[1]
+                #print(f"  {sub_tag_name}: {text}")
+            else:
+                sub_content = sub_element[1]
+                #print(f"  {sub_tag_name}:")
+                for sub_sub_element in sub_content:
+                    sub_sub_tag_name = sub_sub_element[0]
+                    if sub_sub_tag_name == 'text':
+                        text = sub_sub_element[1]
+                        #print(f"    {sub_sub_tag_name}: {text}")
+                    #else:
+                    #    print() #f"    {sub_sub_tag_name}: {sub_sub_element[1]}")
     # Translating over 2-3 LLM and translator.
 
     current_text = ''
     max_chunk = 0
+
+
+
+
+
+
     #Previous version (worked)
     # print(len(result._body['section']['text']))
     # for i in range(3):

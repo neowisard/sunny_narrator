@@ -3,6 +3,7 @@ from calendar import error
 from ftplib import error_reply
 
 from bs4 import BeautifulSoup
+#import lxml as result
 
 __all__ = ['get_fb2'],
 
@@ -25,17 +26,39 @@ class fb2book:
         with open(file, 'r+', encoding='utf-8') as fb2file:
             fb2_content = fb2file.read()
         self.soup = BeautifulSoup(fb2_content, "xml")
-        self.body = self.soup.find('body').prettify() if self.soup.find('body') else None
+        self.body = self.soup.find('body') if self.soup.find('body') else None
+
+    def get_body(self):
+        if self.body:
+            return self.extract_elements(self.body)
+        return []
+
+    def extract_elements(self, element):
+        result = []
+        section_text_length = 0
+
+        for child in element.children:
+            if child.name:  # Если это тег
+                if child.name == 'section':
+                    section_result, section_length = self.extract_elements(child)
+                    section_text_length += section_length
+                    result.append((child.name, section_result, section_length))
+                else:
+                    child_result, child_length = self.extract_elements(child)
+                    section_text_length += child_length
+                    result.append((child.name, child_result))
+            elif child.string and child.string.strip():  # Если это текст
+                text = child.string.strip()
+                section_text_length += len(text)
+                result.append(('text', text))
+
+        return result, section_text_length
 
     def get_identifier(self):
         return self.soup.find('id').text if self.soup.find('id') else None
 
     def get_title(self):
         return self.soup.find('book-title').text if self.soup.find('book-title') else None
-
-    def get_body(self):
-        return self.soup.find('body').text if self.soup.find('body') else exit(3)
-        return self.body
 
     def get_authors(self):
         authors = []
