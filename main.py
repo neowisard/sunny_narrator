@@ -43,7 +43,7 @@ if __name__ == '__main__':
     print(book.get_translators())
 
     # print(book.get_cover_image())
-    # print(book.get_body())
+    print(book.get_body())
     # Взать FBAM парсилку для body
 
     # author_name = result._title_info['author'].get('last-name', '') + ' ' + result._title_info['author'].get('first-name', '')
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     )
     fb2.titleInfo.annotation = book.header.annotation
     fb2.titleInfo.genres = book.header.genres
-    fb2.titleInfo.lang = target_langЛ
+    fb2.titleInfo.lang = target_lang
     fb2.titleInfo.sequences = (
         [(book.header.sequence.name, book.header.sequence.number)]
         if book.header.sequence

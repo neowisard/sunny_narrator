@@ -1,4 +1,6 @@
 import os
+from calendar import error
+from ftplib import error_reply
 
 from bs4 import BeautifulSoup
 
@@ -32,6 +34,7 @@ class fb2book:
         return self.soup.find('book-title').text if self.soup.find('book-title') else None
 
     def get_body(self):
+        return self.soup.find('body').text if self.soup.find('body') else exit(3)
         return self.body
 
     def get_authors(self):
