@@ -65,7 +65,7 @@ if __name__ == '__main__':
     body, total_text_length = book.get_body()
     count = len(body)
     #print_body_structure(body)
-    print("Total text length in sections:", total_text_length, "Body main sec", count)
+    print("Total text length in sections:", total_text_length, "Body 1 level tag (as section, title etc) ", count)
 
     for element in body:
         tag_name = element[0]
@@ -78,6 +78,9 @@ if __name__ == '__main__':
 
         for sub_element in content:
             sub_tag_name = sub_element[0]
+            if sub_tag_name == 'title':
+                section_name = sub_element[1]
+                print(section_name)
             if sub_tag_name == 'text':
                 text = sub_element[1]
                 #print(f"  {sub_tag_name}: {text}")
