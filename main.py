@@ -125,6 +125,8 @@ if __name__ == '__main__':
     )
     for chapterHeader in book.header.tableOfContents:
         print(chapterHeader)
+        
+    """
     fb2 = FictionBook2()
     fb2.titleInfo.title = book.header.title
     fb2.titleInfo.authors = cast(
