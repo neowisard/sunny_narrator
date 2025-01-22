@@ -4,6 +4,7 @@ from FB2 import FictionBook2, Author
 from urllib import request
 import dotenv
 import yaml
+import re
 
 # import libs.read.one as FBr
 import libs.read.sec as fb2r
@@ -164,6 +165,16 @@ if __name__ == '__main__':
     print("Total text length in sections:", total_text_length, "Body 1 level tag (as section, title etc) ", count)
 
 
+    def clean_text(text):
+        # Удаление всех переносов строк
+        text = re.sub(r'\n+', ' ', text)
+        # Удаление всех последовательностей из трех и более пробелов
+        text = re.sub(r' {3,}', ' ', text)
+        # Удаление лишних пробелов в начале и конце строки
+        text = text.strip()
+        return text
+
+    # Пример использования в вашем коде
     def extract_chapters(body):
         chapters = []
         for element in body:
@@ -176,82 +187,114 @@ if __name__ == '__main__':
 
                 for sub_element in content:
                     sub_tag_name = sub_element[0]
-                    if sub_tag_name == 'title':  #epigraph,title, subtitle,p
-                        #Для title мы выдираем название (text) или если есть вложенные элементы то выдираем название из вложенных элементов
-                        section_name = sub_element[1]
-                        # Проверяем наличие текста для вложенного p для названия title
-                        for sub_sub_element in sub_element[1]:
-                            if sub_sub_element[0] == 'text':
-                                section_name = sub_sub_element[1]
-                            #elif sub_sub_element[0] == 'text':
-                            #    #paragraphs.append(sub_sub_element[1])
-                            #    section_name = sub_sub_element[1]
-                            else:
-                                sub_sub_content = sub_sub_element[1]
-                                for sub_sub_sub_element in sub_sub_content:
-                                    sub_sub_sub_tag_name = sub_sub_sub_element[0]
-                                    if sub_sub_sub_tag_name == 'text':
-                                        #paragraphs.append(sub_sub_sub_element[1])
-                                        section_name = sub_sub_sub_element[1]
-                                    elif sub_sub_sub_tag_name == 'subtitle':
-                                        section_subtitle = sub_sub_sub_element[1]
-                    elif sub_tag_name == 'text':
-                        paragraphs.append(sub_element[1])
+                    sub_content = sub_element[1]
+
+                    if sub_tag_name == 'title':
+                        # Обработка title
+                        if isinstance(sub_content, str):
+                            section_name = clean_text(sub_content)
+                        else:
+                            for sub_sub_element in sub_content:
+                                sub_sub_tag_name = sub_sub_element[0]
+                                if sub_sub_tag_name == 'text':
+                                    section_name = clean_text(sub_sub_element[1])
+                                elif sub_sub_tag_name == 'subtitle':
+                                    section_subtitle = clean_text(sub_sub_element[1])
+                                else:
+                                    sub_sub_content = sub_sub_element[1]
+                                    for sub_sub_sub_element in sub_sub_content:
+                                        sub_sub_sub_tag_name = sub_sub_sub_element[0]
+                                        if sub_sub_sub_tag_name == 'text':
+                                            section_name = clean_text(sub_sub_sub_element[1])
+                                        elif sub_sub_sub_tag_name == 'subtitle':
+                                            section_subtitle = clean_text(sub_sub_sub_element[1])
+
+                    elif sub_tag_name == 'subtitle':
+                        # Обработка subtitle
+                        if isinstance(sub_content, str):
+                            section_subtitle = clean_text(sub_content)
+                        else:
+                            for sub_sub_element in sub_content:
+                                if sub_sub_element[0] == 'text':
+                                    section_subtitle = clean_text(sub_sub_element[1])
+
+                    elif sub_tag_name == 'p':
+                        # Обработка параграфа
+                        paragraph_text = []  # Временная переменная для накопления текста внутри параграфа
+                        if isinstance(sub_content, str):
+                            paragraph_text.append(clean_text(sub_content))
+                        else:
+                            for sub_sub_element in sub_content:
+                                if sub_sub_element[0] == 'text':
+                                    paragraph_text.append(clean_text(sub_sub_element[1]))
+                                elif sub_sub_element[0] == 'emphasis':
+                                    # Обработка вложенного emphasis их выделяем кавычками
+                                    for sub_sub_sub_element in sub_sub_element[1]:
+                                        if sub_sub_sub_element[0] == 'text':
+                                            cleaned_text = clean_text(sub_sub_sub_element[1])
+                                            paragraph_text.append(f'"{cleaned_text}"')
+                                            # paragraph_text.append(clean_text(sub_sub_sub_element[1]))
+                                else:
+                                    sub_sub_content = sub_sub_element[1]
+                                    for sub_sub_sub_element in sub_sub_content:
+                                        if sub_sub_sub_element[0] == 'text':
+                                            paragraph_text.append(clean_text(sub_sub_sub_element[1]))
+                                            # Все равно небольшой косяк , пример (пробел после обработки тега strong )
+                                            #   T HE BEAR WAS A BIG BOAR GRIZZLY DOWN OUT OF CANADA. Th
+
+                        # Объединяем все части текста в одну строку и добавляем в список paragraphs
+                        paragraphs.append(' '.join(paragraph_text))
+
+                    #В код ниже надо тоже джойнить строку с параграфом
                     else:
-                        sub_content = sub_element[1]
+                        # Обработка всех остальных тегов
                         for sub_sub_element in sub_content:
-                            sub_sub_tag_name = sub_sub_element[0]
-                            if sub_sub_tag_name == 'text':
-                                paragraphs.append(sub_sub_element[1])
-                            elif sub_sub_tag_name == 'subtitle':
-                                section_subtitle = sub_sub_element[1]
+                            if sub_sub_element[0] == 'text':
+                                paragraphs.append(clean_text(sub_sub_element[1]))
+                            #elif sub_sub_element[0] == 'subtitle':
+                            #    section_subtitle = clean_text(sub_sub_element[1])
                             else:
                                 sub_sub_content = sub_sub_element[1]
                                 for sub_sub_sub_element in sub_sub_content:
-                                    sub_sub_sub_tag_name = sub_sub_sub_element[0]
-                                    if sub_sub_sub_tag_name == 'text':
-                                        paragraphs.append(sub_sub_sub_element[1])
-                                    #elif sub_sub_sub_tag_name == 'subtitle':
-                                    #    section_subtitle = sub_sub_sub_element[1]
+                                    if sub_sub_sub_element[0] == 'text':
+                                        paragraphs.append(clean_text(sub_sub_sub_element[1]))
 
                 if section_name is not None:
                     # Если есть subtitle, добавляем его к заголовку
                     if section_subtitle is not None:
-                        section_name = f"{section_name}: {section_subtitle}"
+                        section_name = f"{section_name}"
                     chapters.append((section_name, paragraphs))
         return chapters
-
-
     # Пример использования
     body, total_text_length = orig_book.get_body()
     chapters = extract_chapters(body)
 
     # Убедитесь, что chapters содержит хотя бы 7 элементов
-    if len(chapters) >= 2:
-        for chapter in chapters[0:1]:  # Используем срез для получения 6 и 7 глав
-            print(f"Title: {chapter[0]}")
-            print("Paragraphs:")
-            for paragraph in chapter[1]:
-                print(f"  {paragraph}")
-            print()
-    else:
-        print("В списке недостаточно глав для вывода.")
+    #if len(chapters) >= 6:
+    #    chapter = chapters[1]  # Получаем 6-ю главу (индекс 5)
+    ##    print(f"Title: {chapter[0]}")
+     #   print("Paragraphs:")
+     #   if len(chapter[1]) >= 2:
+     #       print(f"  {chapter[1][3]}")  # Выводим 5-й параграф (индекс 4)
+     #       print(f"  {chapter[1][4]}")  # Выводим 9-й параграф (индекс 8)
+     #   else:
+     #       print("В главе недостаточно параграфов для вывода.")
+    #else:
+    #    print("В списке недостаточно глав для вывода.")
     # Translating over 2-3 LLM and translator.
 
     current_text = ''
     max_chunk = 0
 
     # Сборщик книги в основной цикл
-    """ as example
- 
 
-    fb2.chapters = list(
+    new_book.chapters = list(
         map(
-            lambda chapter: (chapter.header.title, chapter.paragraphs),
-            book.chapters,
+            lambda chapter: (chapter.section_name, chapter.paragraphs),
+            chapters,
         )
     )
-    fb2.write(f"./Output/{fb2.titleInfo.title}.fb2") """
+    fb2.write(f"./tst.fb2")
 
 
 
