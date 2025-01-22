@@ -143,25 +143,10 @@ if __name__ == '__main__':
 
     # print(book.get_cover_image())
     #print(book.get_body_parsed())
-    # Взать FBAM парсилку для body
-    #body_with_tags = book.get_body_parsed()
-    #body_with_tags_tuples = list(map(lambda x: (x[0], x[1]),body_with_tags))
-    #print(book.get_body())
-    # author_name = result._title_info['author'].get('last-name', '') + ' ' + result._title_info['author'].get('first-name', '')
-    # book_title = result._title_info['book-title']
-    # print(book_title)
-    # 2 Анализаторы
-    # Make vocab by spaCy
-    # Add user vocab
-    # Make classification
 
-    # 3 Переводчики (с передачей system\add promt
-    # Translate meta
-    # Improve pictures
-    # Chunking and translate body (stream)
     body, total_text_length = orig_book.get_body()
     count = len(body)
-    #print_body_structure(body)
+    # print_body_structure(body)
     print("Total text length in sections:", total_text_length, "Body 1 level tag (as section, title etc) ", count)
 
 
@@ -173,6 +158,7 @@ if __name__ == '__main__':
         # Удаление лишних пробелов в начале и конце строки
         text = text.strip()
         return text
+
 
     # Пример использования в вашем коде
     def extract_chapters(body):
@@ -245,13 +231,13 @@ if __name__ == '__main__':
                         # Объединяем все части текста в одну строку и добавляем в список paragraphs
                         paragraphs.append(' '.join(paragraph_text))
 
-                    #В код ниже надо тоже джойнить строку с параграфом
+                    # В код ниже надо тоже джойнить строку с параграфом
                     else:
                         # Обработка всех остальных тегов
                         for sub_sub_element in sub_content:
                             if sub_sub_element[0] == 'text':
                                 paragraphs.append(clean_text(sub_sub_element[1]))
-                            #elif sub_sub_element[0] == 'subtitle':
+                            # elif sub_sub_element[0] == 'subtitle':
                             #    section_subtitle = clean_text(sub_sub_element[1])
                             else:
                                 sub_sub_content = sub_sub_element[1]
@@ -265,26 +251,41 @@ if __name__ == '__main__':
                         section_name = f"{section_name}"
                     chapters.append((section_name, paragraphs))
         return chapters
+
+
     # Пример использования
     body, total_text_length = orig_book.get_body()
     chapters = extract_chapters(body)
 
     # Убедитесь, что chapters содержит хотя бы 7 элементов
-    #if len(chapters) >= 6:
+    # if len(chapters) >= 6:
     #    chapter = chapters[1]  # Получаем 6-ю главу (индекс 5)
     ##    print(f"Title: {chapter[0]}")
-     #   print("Paragraphs:")
-     #   if len(chapter[1]) >= 2:
-     #       print(f"  {chapter[1][3]}")  # Выводим 5-й параграф (индекс 4)
-     #       print(f"  {chapter[1][4]}")  # Выводим 9-й параграф (индекс 8)
-     #   else:
-     #       print("В главе недостаточно параграфов для вывода.")
-    #else:
+    #   print("Paragraphs:")
+    #   if len(chapter[1]) >= 2:
+    #       print(f"  {chapter[1][3]}")  # Выводим 5-й параграф (индекс 4)
+    #       print(f"  {chapter[1][4]}")  # Выводим 9-й параграф (индекс 8)
+    #   else:
+    #       print("В главе недостаточно параграфов для вывода.")
+    # else:
     #    print("В списке недостаточно глав для вывода.")
     # Translating over 2-3 LLM and translator.
 
     current_text = ''
     max_chunk = 0
+
+
+
+    # 2 Анализаторы
+    # Make vocab by spaCy
+    # Add user vocab
+    # Make classification
+
+    # 3 Переводчики (с передачей system\add promt
+    # Translate meta
+    # Improve pictures
+    # Chunking and translate body (stream)
+
 
     # Сборщик книги в основной цикл
 
