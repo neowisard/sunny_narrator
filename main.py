@@ -290,11 +290,11 @@ if __name__ == '__main__':
 
     new_book.chapters = list(
         map(
-            lambda chapter: (chapter.section_name, chapter.paragraphs),
+            lambda chapter: (chapter[0], chapter[1]),
             chapters,
         )
     )
-    fb2.write(f"./tst.fb2")
+    new_book.write(f"./books/out_tst.fb2")
 
 
 
