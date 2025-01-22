@@ -110,7 +110,7 @@ if __name__ == '__main__':
     #new_book.titleInfo.title = ta.get_completion(orig_book.get_title(),'You are a helpful translator, linguist from {source_lang } to {target_lang} language')
     #new_book.titleInfo.title = ta.translate(source_lang, target_lang, orig_book.get_title(), country)
     #№new_book.titleInfo.annotation = ta.translate(source_lang, target_lang, orig_book.get_description(), country)
-    '''
+
     with ThreadPoolExecutor(max_workers=5) as executor:
         future_title = executor.submit(translate_title)
         future_annotation = executor.submit(translate_annotation)
@@ -126,8 +126,8 @@ if __name__ == '__main__':
         new_book.documentInfo.programUsed = "Sunny narrator ,github"
         new_book.titleInfo.translators = "Sunny narrator , automated AI translator"
         new_book.titleInfo.lang = target_lang
-    print_book(new_book) 
-    '''
+    #print_book(new_book)
+
     #print("New:\n")
     #print(new_book.titleInfo.title)4
     #print(new_book.titleInfo.annotation)
