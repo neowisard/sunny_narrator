@@ -1,6 +1,7 @@
 import os
 from calendar import error
 from ftplib import error_reply
+import re
 
 from bs4 import BeautifulSoup
 #import lxml as result
@@ -33,6 +34,15 @@ class fb2book:
             return self.extract_elements(self.body)
         return []
 
+    def clean_text(self,text):
+        # Удаление всех переносов строк
+        text = re.sub(r'\n+', ' ', text)
+        # Удаление всех последовательностей из трех и более пробелов
+        text = re.sub(r' {3,}', ' ', text)
+        # Удаление лишних пробелов в начале и конце строки
+        text = text.strip()
+        return text
+
     def extract_elements(self, element):
         result = []
         section_text_length = 0
@@ -53,6 +63,99 @@ class fb2book:
                 result.append(('text', text))
 
         return result, section_text_length
+
+
+    def extract_chapters(self,body):
+        chapters = []
+        for element in body:
+            tag_name = element[0]
+            content = element[1]
+            if tag_name == 'section':
+                section_name = None
+                section_subtitle = None
+                paragraphs = []
+
+                for sub_element in content:
+                    sub_tag_name = sub_element[0]
+                    sub_content = sub_element[1]
+
+                    if sub_tag_name == 'title':
+                        # Обработка title
+                        if isinstance(sub_content, str):
+                            section_name = self.clean_text(sub_content)
+                        else:
+                            for sub_sub_element in sub_content:
+                                sub_sub_tag_name = sub_sub_element[0]
+                                if sub_sub_tag_name == 'text':
+                                    section_name = self.clean_text(sub_sub_element[1])
+                                elif sub_sub_tag_name == 'subtitle':
+                                    section_subtitle = self.clean_text(sub_sub_element[1])
+                                else:
+                                    sub_sub_content = sub_sub_element[1]
+                                    for sub_sub_sub_element in sub_sub_content:
+                                        sub_sub_sub_tag_name = sub_sub_sub_element[0]
+                                        if sub_sub_sub_tag_name == 'text':
+                                            section_name = self.clean_text(sub_sub_sub_element[1])
+                                        elif sub_sub_sub_tag_name == 'subtitle':
+                                            section_subtitle = self.clean_text(sub_sub_sub_element[1])
+
+                    elif sub_tag_name == 'subtitle':
+                        # Обработка subtitle
+                        if isinstance(sub_content, str):
+                            section_subtitle = self.clean_text(sub_content)
+                        else:
+                            for sub_sub_element in sub_content:
+                                if sub_sub_element[0] == 'text':
+                                    section_subtitle = self.clean_text(sub_sub_element[1])
+
+                    elif sub_tag_name == 'p':
+                        # Обработка параграфа
+                        paragraph_text = []  # Временная переменная для накопления текста внутри параграфа
+                        if isinstance(sub_content, str):
+                            paragraph_text.append(self.clean_text(sub_content))
+                        else:
+                            for sub_sub_element in sub_content:
+                                if sub_sub_element[0] == 'text':
+                                    paragraph_text.append(self.clean_text(sub_sub_element[1]))
+                                elif sub_sub_element[0] == 'emphasis':
+                                    # Обработка вложенного emphasis их выделяем кавычками
+                                    for sub_sub_sub_element in sub_sub_element[1]:
+                                        if sub_sub_sub_element[0] == 'text':
+                                            cleaned_text = self.clean_text(sub_sub_sub_element[1])
+                                            paragraph_text.append(f'"{cleaned_text}"')
+                                            # paragraph_text.append(self.clean_text(sub_sub_sub_element[1]))
+                                else:
+                                    sub_sub_content = sub_sub_element[1]
+                                    for sub_sub_sub_element in sub_sub_content:
+                                        if sub_sub_sub_element[0] == 'text':
+                                            paragraph_text.append(self.clean_text(sub_sub_sub_element[1]))
+                                            # Все равно небольшой косяк , пример (пробел после обработки тега strong )
+                                            #   T HE BEAR WAS A BIG BOAR GRIZZLY DOWN OUT OF CANADA. Th
+
+                        # Объединяем все части текста в одну строку и добавляем в список paragraphs
+                        paragraphs.append(' '.join(paragraph_text))
+
+                    # В код ниже надо тоже джойнить строку с параграфом
+                    else:
+                        # Обработка всех остальных тегов
+                        for sub_sub_element in sub_content:
+                            if sub_sub_element[0] == 'text':
+                                paragraphs.append(self.clean_text(sub_sub_element[1]))
+                            # elif sub_sub_element[0] == 'subtitle':
+                            #    section_subtitle = self.clean_text(sub_sub_element[1])
+                            else:
+                                sub_sub_content = sub_sub_element[1]
+                                for sub_sub_sub_element in sub_sub_content:
+                                    if sub_sub_sub_element[0] == 'text':
+                                        paragraphs.append(self.clean_text(sub_sub_sub_element[1]))
+
+                if section_name is not None:
+                    # Если есть subtitle, добавляем его к заголовку
+                    if section_subtitle is not None:
+                        section_name = f"{section_name}"
+                    chapters.append((section_name, paragraphs))
+        return chapters
+
 
     def get_identifier(self):
         return self.soup.find('id').text if self.soup.find('id') else None
