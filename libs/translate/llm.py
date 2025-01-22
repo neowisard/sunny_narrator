@@ -21,7 +21,7 @@ def get_completion(
         prompt: str,
         system_message: str = "You are a helpful assistant.",
         model: str = "gpt-4-turbo",
-        temperature: float = 0.3,
+        temperature: float = 0.5,
         json_mode: bool = False,
 ) -> Union[str, dict]:
     """
@@ -246,6 +246,7 @@ def one_chunk_translate_text(
     Returns:
         str: The improved translation of the source text.
     """
+#This code must be switched to 2 LLM  tr1(llm1)-reflect(llm1)-tr2(tuned to target lang llm)
     translation_1 = one_chunk_initial_translation(
         source_lang, target_lang, source_text
     )
