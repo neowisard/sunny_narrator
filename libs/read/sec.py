@@ -77,10 +77,10 @@ class fb2book:
                     print(txt)
 
             # Обработка неопределенных тегов внутри section
-             for child in element.children:
-                 if child.name and child.name not in ['title', 'subtitle', 'p', 'epigraph']:
-                     # Если тег не title, subtitle или p, добавляем его текст к абзацам
-                     paragraphs.append(child.get_text(strip=True))
+            # for child in element.children:
+            #     if child.name and child.name not in ['title', 'subtitle', 'p', 'epigraph']:
+            #         # Если тег не title, subtitle или p, добавляем его текст к абзацам
+            #         paragraphs.append(child.get_text(strip=True))
 
             chapters.append({
                 'name': section_name,
