@@ -45,7 +45,7 @@ def translate_annotation():
         description = "Unrecognized"
 
     try:
-        translated_description = ta.one_chunk_initial_translation(source_lang, target_lang, description)
+        translated_description = ta.translate(source_lang, target_lang, description, country)
         if not isinstance(translated_description, str):
             translated_description = "Translation failed"
         return translated_description
@@ -123,8 +123,8 @@ def process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, 
             'paragraphs': []
         }
 
-        if i >= 4:
-            break
+        #if i >= 2:
+        #    break
         #Переводим параграфы
         current_text = ''
         for j, paragraph in enumerate(chapter['paragraphs']):
@@ -133,17 +133,17 @@ def process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, 
                 ta.ic("Paragraph size over limit")
             #if j >= 5:
             #    break
-            if len(current_text) < max_len_chunk and len(paragraph) < max_len_paragraph:
-                current_text = current_text + paragraph   # Добавляем пробел между абзацами
-                #ta.ic(current_text)
-                #ta.ic(len(paragraph))
-
-            else:
-                #ta.ic(current_text)
+            if len(current_text) > max_len_chunk or len(paragraph) > max_len_paragraph:
+                ta.ic(len(paragraph))
                 ta.ic(len(current_text))
                 translated_paragraph = ta.translate(source_lang, target_lang, current_text, country)
                 translated_chapter['paragraphs'].append(translated_paragraph)
                 current_text = ''  # Начинаем новый цикл перевода
+            else:
+                current_text = current_text + paragraph   # Добавляем пробел между абзацами
+                #ta.ic(current_text)
+                #ta.ic(len(paragraph))
+
 
         # Если остался непереведённый текст в current_text
         if current_text:
@@ -158,6 +158,7 @@ def process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, 
 
 
 if __name__ == '__main__':
+
     # 1 Получить переменные и файл
     orig_book = fb2r.fb2book(fb2file)
     new_book = FictionBook2()
@@ -206,9 +207,10 @@ if __name__ == '__main__':
 
 
     new_book.chapters = process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, max_len_paragraph)
-
+    base_path, file_name = config_env['FILE'].rsplit('.f', 1)
+    new_file_name = f"{base_path}_{target_lang}.fb2"
     # Сборщик книги в основной цикл
-    new_book.write(f"./books/{target_lang}_{fb2file}.fb2")
+    new_book.write(f"./{new_file_name}")
 
 
 
