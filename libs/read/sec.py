@@ -33,7 +33,6 @@ class fb2book:
     def get_chapters(self):
         return self.chapters
 
-
     def extract_chapters(self, body):
         chapters = []
         for element in body.find_all('section'):
@@ -44,29 +43,44 @@ class fb2book:
 
             # Извлечение заголовка секции
             title_tag = element.find('title')
-            if title_tag:
-                section_name = title_tag.get_text(strip=True)
-            # Извлечение эпиграфа секции (если есть)
+            match title_tag:
+                case None:
+                    pass
+                case _:
+                    section_name = title_tag.get_text(strip=True)
+                    print(section_name)
 
+            # Извлечение эпиграфа секции (если есть)
             epigraph_tag = element.find('epigraph')
-            if epigraph_tag:
-                section_epigraph = epigraph_tag.get_text(strip=True)
+            match epigraph_tag:
+                case None:
+                    pass
+                case _:
+                    section_epigraph = epigraph_tag.get_text(strip=True)
 
             # Извлечение подзаголовка секции (если есть)
             subtitle_tag = element.find('subtitle')
-            if subtitle_tag:
-                section_subtitle = subtitle_tag.get_text(strip=True)
+            match subtitle_tag:
+                case None:
+                    pass
+                case _:
+                    section_subtitle = subtitle_tag.get_text(strip=True)
 
             # Извлечение абзацев
-            for p in element.find_all('p'):
-                # Используем get_text() для извлечения текста из абзаца, включая вложенные теги
-                paragraphs.append(p.get_text(strip=True))
+            p_tag = element.find('p')
+            match p_tag:
+                case None:
+                    pass
+                case _:
+                    txt = p_tag.get_text(strip=True)
+                    paragraphs.append(txt)
+                    print(txt)
 
             # Обработка неопределенных тегов внутри section
-            for child in element.children:
-                if child.name and child.name not in ['title', 'subtitle', 'p','epigraph']:
-                    # Если тег не title, subtitle или p, добавляем его текст к абзацам
-                    paragraphs.append(child.get_text(strip=True))
+             for child in element.children:
+                 if child.name and child.name not in ['title', 'subtitle', 'p', 'epigraph']:
+                     # Если тег не title, subtitle или p, добавляем его текст к абзацам
+                     paragraphs.append(child.get_text(strip=True))
 
             chapters.append({
                 'name': section_name,

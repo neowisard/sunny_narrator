@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from base64 import b64encode
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 from xml.dom import minidom
 
 from .builders import TitleInfoBuilder, DocumentInfoBuilder
@@ -68,22 +68,33 @@ class FB2Builder:
                 bodyElement.append(self.BuildSectionFromChapter(chapter))
 
     @staticmethod
-    def BuildSectionFromChapter(
-            chapter: Tuple[str, Union[
-                ET.Element, List[str], List[ET.Element]]]) -> ET.Element:
+    def BuildSectionFromChapter(chapter: Dict[str, Union[str, List[str]]]) -> ET.Element:
         sectionElement = ET.Element("section")
-        ET.SubElement(ET.SubElement(sectionElement, "title"),
-                      "p").text = chapter[0]
-        if(isinstance(chapter[1], list)
-           and all([isinstance(p, str) for p in chapter[1]])):
-            paragraph: str
-            for paragraph in chapter[1]:  # type: ignore
-                ET.SubElement(sectionElement, "p").text = paragraph
-        else:
-            paragraphElement: ET.Element
-            paragraphs: List[ET.Element] = list(chapter[1])  # type: ignore
-            for paragraphElement in paragraphs:
-                sectionElement.append(paragraphElement)
+
+        # Добавление заголовка (title)
+        if chapter.get('name'):
+            titleElement = ET.SubElement(sectionElement, "title")
+            pElement = ET.SubElement(titleElement, "p")
+            pElement.text = chapter['name']
+
+        # Добавление эпиграфа (epigraph)
+        if chapter.get('epigraph'):
+            epigraphElement = ET.SubElement(sectionElement, "epigraph")
+            pElement = ET.SubElement(epigraphElement, "p")
+            pElement.text = chapter['epigraph']
+
+        # Добавление подзаголовка (subtitle)
+        if chapter.get('subtitle'):
+            subtitleElement = ET.SubElement(sectionElement, "subtitle")
+            pElement = ET.SubElement(subtitleElement, "p")
+            pElement.text = chapter['subtitle']
+
+        # Добавление параграфов (paragraphs)
+        if chapter.get('paragraphs'):
+            for paragraph in chapter['paragraphs']:
+                pElement = ET.SubElement(sectionElement, "p")
+                pElement.text = paragraph
+
         return sectionElement
 
     def _AddBinaries(self, root: ET.Element) -> None:

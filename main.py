@@ -1,6 +1,6 @@
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from FB2 import FictionBook2, Author
+from libs.FB2 import FictionBook2, Author
 from urllib import request
 import dotenv
 import yaml
@@ -113,20 +113,25 @@ def process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, 
 
     for i, chapter in enumerate(chapters):
         # Добавление главы, если она ещё не существует
+        ta.ic(chapter['name'])
+        ta.ic(chapter['epigraph'])
+        ta.ic(len(chapter['paragraphs']))
         translated_chapter = {
             'name': ta.one_chunk_initial_translation(source_lang, target_lang, chapter['name']) if chapter['name'] else '',
             'epigraph': ta.one_chunk_initial_translation(source_lang, target_lang, chapter['epigraph']) if chapter['epigraph'] else '',
             'subtitle': ta.one_chunk_initial_translation(source_lang, target_lang, chapter['subtitle']) if chapter['subtitle'] else '',
             'paragraphs': []
         }
-        if i >= 4:
+
+        if i >= 2:
             break
         #Переводим параграфы
         current_text = ''
         for j, paragraph in enumerate(chapter['paragraphs']):
+            ta.ic(paragraph)
             if len(paragraph) > max_len_chunk:
                 ta.ic("Paragraph size over limit")
-            if j >= 2:
+            if j >= 3:
                 break
             if len(current_text) < max_len_chunk and len(paragraph) < max_len_paragraph:
                 current_text += paragraph + ' '  # Добавляем пробел между абзацами
@@ -166,7 +171,7 @@ if __name__ == '__main__':
     # 3 Переводчики (с передачей system\add promt
     # Translate meta
 
-
+    '''
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_title = executor.submit(translate_title)
         future_annotation = executor.submit(translate_annotation)
@@ -180,7 +185,7 @@ if __name__ == '__main__':
         new_book.titleInfo.genres = future_tags.result()
         new_book.titleInfo.series = future_series.result()
         new_book.documentInfo.programUsed = "Sunny narrator ,github"
-        new_book.titleInfo.translators = "Sunny narrator , automated AI translator"
+        new_book.titleInfo.translators = ["Sunny narrator , automated AI translator"]
         new_book.titleInfo.lang = target_lang
     #print_book(new_book)
 
@@ -188,7 +193,7 @@ if __name__ == '__main__':
     ta.ic(new_book.titleInfo.annotation)
     ta.ic(new_book.titleInfo.authors)
     ta.ic(new_book.titleInfo.genres)
-
+    '''
 
     # Improve pictures
 
@@ -196,10 +201,9 @@ if __name__ == '__main__':
     # Translating over 2-3 LLM and translator.
 
 
-    translated_body= process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, max_len_paragraph)
+    new_book.chapters = process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, max_len_paragraph)
 
     # Сборщик книги в основной цикл
-    new_book.chapters = translated_body
     new_book.write(f"./books/out_tst.fb2")
 
 
