@@ -28,134 +28,54 @@ class fb2book:
             fb2_content = fb2file.read()
         self.soup = BeautifulSoup(fb2_content, "xml")
         self.body = self.soup.find('body') if self.soup.find('body') else None
+        self.chapters = self.extract_chapters(self.body) if self.body else []
 
-    def get_body(self):
-        if self.body:
-            return self.extract_elements(self.body)
-        return []
-
-    def clean_text(self,text):
-        # Удаление всех переносов строк
-        text = re.sub(r'\n+', ' ', text)
-        # Удаление всех последовательностей из трех и более пробелов
-        text = re.sub(r' {3,}', ' ', text)
-        # Удаление лишних пробелов в начале и конце строки
-        text = text.strip()
-        return text
-
-    def extract_elements(self, element):
-        result = []
-        section_text_length = 0
-
-        for child in element.children:
-            if child.name:  # Если это тег
-                if child.name == 'section':
-                    section_result, section_length = self.extract_elements(child)
-                    section_text_length += section_length
-                    result.append((child.name, section_result, section_length))
-                else:
-                    child_result, child_length = self.extract_elements(child)
-                    section_text_length += child_length
-                    result.append((child.name, child_result))
-            elif child.string and child.string.strip():  # Если это текст
-                text = child.string.strip()
-                section_text_length += len(text)
-                result.append(('text', text))
-
-        return result, section_text_length
+    def get_chapters(self):
+        return self.chapters
 
 
-    def extract_chapters(self,body):
+    def extract_chapters(self, body):
         chapters = []
-        for element in body:
-            tag_name = element[0]
-            content = element[1]
-            if tag_name == 'section':
-                section_name = None
-                section_subtitle = None
-                paragraphs = []
+        for element in body.find_all('section'):
+            section_name = None
+            section_epigraph = None
+            section_subtitle = None
+            paragraphs = []
 
-                for sub_element in content:
-                    sub_tag_name = sub_element[0]
-                    sub_content = sub_element[1]
+            # Извлечение заголовка секции
+            title_tag = element.find('title')
+            if title_tag:
+                section_name = title_tag.get_text(strip=True)
+            # Извлечение эпиграфа секции (если есть)
 
-                    if sub_tag_name == 'title':
-                        # Обработка title
-                        if isinstance(sub_content, str):
-                            section_name = self.clean_text(sub_content)
-                        else:
-                            for sub_sub_element in sub_content:
-                                sub_sub_tag_name = sub_sub_element[0]
-                                if sub_sub_tag_name == 'text':
-                                    section_name = self.clean_text(sub_sub_element[1])
-                                elif sub_sub_tag_name == 'subtitle':
-                                    section_subtitle = self.clean_text(sub_sub_element[1])
-                                else:
-                                    sub_sub_content = sub_sub_element[1]
-                                    for sub_sub_sub_element in sub_sub_content:
-                                        sub_sub_sub_tag_name = sub_sub_sub_element[0]
-                                        if sub_sub_sub_tag_name == 'text':
-                                            section_name = self.clean_text(sub_sub_sub_element[1])
-                                        elif sub_sub_sub_tag_name == 'subtitle':
-                                            section_subtitle = self.clean_text(sub_sub_sub_element[1])
+            epigraph_tag = element.find('epigraph')
+            if epigraph_tag:
+                section_epigraph = epigraph_tag.get_text(strip=True)
 
-                    elif sub_tag_name == 'subtitle':
-                        # Обработка subtitle
-                        if isinstance(sub_content, str):
-                            section_subtitle = self.clean_text(sub_content)
-                        else:
-                            for sub_sub_element in sub_content:
-                                if sub_sub_element[0] == 'text':
-                                    section_subtitle = self.clean_text(sub_sub_element[1])
+            # Извлечение подзаголовка секции (если есть)
+            subtitle_tag = element.find('subtitle')
+            if subtitle_tag:
+                section_subtitle = subtitle_tag.get_text(strip=True)
 
-                    elif sub_tag_name == 'p':
-                        # Обработка параграфа
-                        paragraph_text = []  # Временная переменная для накопления текста внутри параграфа
-                        if isinstance(sub_content, str):
-                            paragraph_text.append(self.clean_text(sub_content))
-                        else:
-                            for sub_sub_element in sub_content:
-                                if sub_sub_element[0] == 'text':
-                                    paragraph_text.append(self.clean_text(sub_sub_element[1]))
-                                elif sub_sub_element[0] == 'emphasis':
-                                    # Обработка вложенного emphasis их выделяем кавычками
-                                    for sub_sub_sub_element in sub_sub_element[1]:
-                                        if sub_sub_sub_element[0] == 'text':
-                                            cleaned_text = self.clean_text(sub_sub_sub_element[1])
-                                            paragraph_text.append(f'"{cleaned_text}"')
-                                            # paragraph_text.append(self.clean_text(sub_sub_sub_element[1]))
-                                else:
-                                    sub_sub_content = sub_sub_element[1]
-                                    for sub_sub_sub_element in sub_sub_content:
-                                        if sub_sub_sub_element[0] == 'text':
-                                            paragraph_text.append(self.clean_text(sub_sub_sub_element[1]))
-                                            # Все равно небольшой косяк , пример (пробел после обработки тега strong )
-                                            #   T HE BEAR WAS A BIG BOAR GRIZZLY DOWN OUT OF CANADA. Th
+            # Извлечение абзацев
+            for p in element.find_all('p'):
+                # Используем get_text() для извлечения текста из абзаца, включая вложенные теги
+                paragraphs.append(p.get_text(strip=True))
 
-                        # Объединяем все части текста в одну строку и добавляем в список paragraphs
-                        paragraphs.append(' '.join(paragraph_text))
+            # Обработка неопределенных тегов внутри section
+            for child in element.children:
+                if child.name and child.name not in ['title', 'subtitle', 'p','epigraph']:
+                    # Если тег не title, subtitle или p, добавляем его текст к абзацам
+                    paragraphs.append(child.get_text(strip=True))
 
-                    # В код ниже надо тоже джойнить строку с параграфом
-                    else:
-                        # Обработка всех остальных тегов
-                        for sub_sub_element in sub_content:
-                            if sub_sub_element[0] == 'text':
-                                paragraphs.append(self.clean_text(sub_sub_element[1]))
-                            # elif sub_sub_element[0] == 'subtitle':
-                            #    section_subtitle = self.clean_text(sub_sub_element[1])
-                            else:
-                                sub_sub_content = sub_sub_element[1]
-                                for sub_sub_sub_element in sub_sub_content:
-                                    if sub_sub_sub_element[0] == 'text':
-                                        paragraphs.append(self.clean_text(sub_sub_sub_element[1]))
+            chapters.append({
+                'name': section_name,
+                'epigraph': section_epigraph,
+                'subtitle': section_subtitle,
+                'paragraphs': paragraphs
+            })
 
-                if section_name is not None:
-                    # Если есть subtitle, добавляем его к заголовку
-                    if section_subtitle is not None:
-                        section_name = f"{section_name}"
-                    chapters.append((section_name, paragraphs))
         return chapters
-
 
     def get_identifier(self):
         return self.soup.find('id').text if self.soup.find('id') else None

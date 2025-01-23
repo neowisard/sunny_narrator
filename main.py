@@ -9,6 +9,7 @@ import asyncio
 import libs.read.sec as fb2r
 import libs.translate.llm as ta
 from lxml.html.defs import table_tags
+from setuptools.command.easy_install import current_umask
 from sympy.physics.units import current
 
 #from hypothesis import example
@@ -35,19 +36,32 @@ base_url = config_env['API_BASE']
 # Предполагается, что ta, source_lang, target_lang, orig_book и country уже определены
 
 def translate_title():
-    return ta.translate(source_lang, target_lang, orig_book.get_title(), country)
+    return ta.one_chunk_initial_translation(source_lang, target_lang, orig_book.get_title())
+
 
 def translate_annotation():
-    return ta.translate(source_lang, target_lang, orig_book.get_description(), country)
+    description = orig_book.get_description()
+    if not isinstance(description, str):
+        description = "Unrecognized"
+
+    try:
+        translated_description = ta.one_chunk_initial_translation(source_lang, target_lang, description)
+        if not isinstance(translated_description, str):
+            translated_description = "Translation failed"
+        return translated_description
+    except Exception as e:
+        print(f"Translation error: {e}")
+        return "Translation failed"
+
 
 def translate_authors():
     authors = orig_book.get_authors()
 
-    if len(authors) < 2:
+    if len(authors) < 1:
         return None  # Используйте None вместо none
 
     for i in range(len(authors)):
-        authors[i] = ta.translate(source_lang, target_lang, authors[i], country)
+        authors[i] = ta.one_chunk_initial_translation(source_lang, target_lang, authors[i])
 
     return authors
 
@@ -56,12 +70,12 @@ def translate_tags():
     tags = orig_book.get_tags()
 
     # Check if tags is empty or has only one element
-    if not tags or len(tags) < 2:
+    if not tags or len(tags) < 1:
         return None  # Return None if there are no tags or only one tag
 
     # Translate each tag
     translated_tags = [
-        ta.translate(source_lang, target_lang, tag, country)
+        ta.one_chunk_initial_translation(source_lang, target_lang, tag)
         for tag in tags
     ]
 
@@ -71,12 +85,12 @@ def translate_series():
     series = orig_book.get_series()
 
     # Check if series is empty or has only one element
-    if not series or len(series) < 2:
+    if not series or len(series) < 1:
         return None  # Return None if there are no series or only one series
 
     # Translate each series element
     translated_series = [
-        ta.translate(source_lang, target_lang, series_item, country)
+        ta.one_chunk_initial_translation(source_lang, target_lang, series_item)
         for series_item in series
     ]
 
@@ -92,6 +106,48 @@ def print_book(book, indent=0):
             print(f"{indent_str}{attr}: {value}")
 
 
+def process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, max_len_paragraph):
+    #body = orig_book.find('body')  # Предполагается, что orig_book - это BeautifulSoup объект
+    #chapters = orig_book.extract_chapters(body)
+    translated_chapters = []
+
+    for i, chapter in enumerate(chapters):
+        # Добавление главы, если она ещё не существует
+        translated_chapter = {
+            'name': ta.one_chunk_initial_translation(source_lang, target_lang, chapter['name']) if chapter['name'] else '',
+            'epigraph': ta.one_chunk_initial_translation(source_lang, target_lang, chapter['epigraph']) if chapter['epigraph'] else '',
+            'subtitle': ta.one_chunk_initial_translation(source_lang, target_lang, chapter['subtitle']) if chapter['subtitle'] else '',
+            'paragraphs': []
+        }
+        if i >= 4:
+            break
+        #Переводим параграфы
+        current_text = ''
+        for j, paragraph in enumerate(chapter['paragraphs']):
+            if len(paragraph) > max_len_chunk:
+                ta.ic("Paragraph size over limit")
+            if j >= 2:
+                break
+            if len(current_text) < max_len_chunk and len(paragraph) < max_len_paragraph:
+                current_text += paragraph + ' '  # Добавляем пробел между абзацами
+            else:
+                ta.ic(current_text)
+                translated_paragraph = ta.translate(source_lang, target_lang, current_text, country)
+                translated_chapter['paragraphs'].append(translated_paragraph)
+                current_text = ''  # Начинаем новый цикл перевода
+
+        # Если остался непереведённый текст в current_text
+        if current_text:
+            ta.ic('last:')
+            ta.ic(current_text)
+            translated_paragraph = ta.translate(source_lang, target_lang, current_text, country)
+            translated_chapter['paragraphs'].append(translated_paragraph)
+
+        translated_chapters.append(translated_chapter)
+
+    return translated_chapters
+
+
 if __name__ == '__main__':
     # 1 Получить переменные и файл
     orig_book = fb2r.fb2book(fb2file)
@@ -99,11 +155,7 @@ if __name__ == '__main__':
 
     # Открыть файл и Распарсить файл
 
-    body, total_text_length = orig_book.get_body()
-    chapters = orig_book.extract_chapters(body)
-
-
-
+    chapters = orig_book.get_chapters()
 
 
     # 2 Анализаторы
@@ -115,7 +167,7 @@ if __name__ == '__main__':
     # Translate meta
 
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         future_title = executor.submit(translate_title)
         future_annotation = executor.submit(translate_annotation)
         future_authors = executor.submit(translate_authors)
@@ -132,6 +184,11 @@ if __name__ == '__main__':
         new_book.titleInfo.lang = target_lang
     #print_book(new_book)
 
+    ta.ic(new_book.titleInfo.title)
+    ta.ic(new_book.titleInfo.annotation)
+    ta.ic(new_book.titleInfo.authors)
+    ta.ic(new_book.titleInfo.genres)
+
 
     # Improve pictures
 
@@ -139,43 +196,10 @@ if __name__ == '__main__':
     # Translating over 2-3 LLM and translator.
 
 
-    sections = [
-        {"title": "Введение", "para": ["Текст первого параграфа."]}
-        ]
-
-    #ta.translate(source_lang, target_lang, orig_book.get_description(), country)
-    # Проверяем, что chapters содержит хотя бы один элемент
-    if chapters:
-        for i, chapter in enumerate(chapters):
-            # Добавление главы, если она ещё не существует
-            if i >= len(sections):
-                sections.append({"title": "", "para": []})
-            if i >= 2:  # Ограничиваем цикл двумя проходами для отладки
-                break
-            if len(chapter[0]) > 2:
-                sections[i]['title'] = ta.translate(source_lang, target_lang, chapter[0], country)
-            else:
-                sections[i]['title'] = chapter[0]
-            current_text = ''
-            # print(f"Глава {i + 1}: {chapter[0]}")  # Выводим заголовок главы
-            # print("Параграфы:")
-            for j, paragraph in enumerate(chapter[1]):
-                if len(paragraph) > max_len_chunk:
-                    print("Paragraph size over limit")
-                if len(current_text) < max_len_chunk and len(paragraph) < max_len_paragraph:
-                    current_text = "".join([current_text, paragraph])
-                else:
-                    translated = ta.translate(source_lang, target_lang, current_text, country)
-                    sections[i]['para'].append(translated)
-                    current_text = paragraph  # Не забываем добавить текущий параграф в current_text после перевода
-
-            # Если остался непереведённый текст в current_text
-            if current_text:
-                translated = ta.translate(source_lang, target_lang, current_text, country)
-                sections[i]['para'].append(translated)
+    translated_body= process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, max_len_paragraph)
 
     # Сборщик книги в основной цикл
-    new_book.chapters = sections
+    new_book.chapters = translated_body
     new_book.write(f"./books/out_tst.fb2")
 
 
