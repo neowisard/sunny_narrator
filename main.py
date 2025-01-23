@@ -113,9 +113,9 @@ def process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, 
 
     for i, chapter in enumerate(chapters):
         # Добавление главы, если она ещё не существует
-        ta.ic(chapter['name'])
-        ta.ic(chapter['epigraph'])
-        ta.ic(len(chapter['paragraphs']))
+        #ta.ic(chapter['name'])
+        #ta.ic(chapter['epigraph'])
+        #ta.ic(len(chapter['paragraphs']))
         translated_chapter = {
             'name': ta.one_chunk_initial_translation(source_lang, target_lang, chapter['name']) if chapter['name'] else '',
             'epigraph': ta.one_chunk_initial_translation(source_lang, target_lang, chapter['epigraph']) if chapter['epigraph'] else '',
@@ -123,28 +123,32 @@ def process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, 
             'paragraphs': []
         }
 
-        if i >= 2:
+        if i >= 4:
             break
         #Переводим параграфы
         current_text = ''
         for j, paragraph in enumerate(chapter['paragraphs']):
-            ta.ic(paragraph)
+            #ta.ic(paragraph)
             if len(paragraph) > max_len_chunk:
                 ta.ic("Paragraph size over limit")
-            if j >= 3:
-                break
+            #if j >= 5:
+            #    break
             if len(current_text) < max_len_chunk and len(paragraph) < max_len_paragraph:
-                current_text += paragraph + ' '  # Добавляем пробел между абзацами
+                current_text = current_text + paragraph   # Добавляем пробел между абзацами
+                #ta.ic(current_text)
+                #ta.ic(len(paragraph))
+
             else:
-                ta.ic(current_text)
+                #ta.ic(current_text)
+                ta.ic(len(current_text))
                 translated_paragraph = ta.translate(source_lang, target_lang, current_text, country)
                 translated_chapter['paragraphs'].append(translated_paragraph)
                 current_text = ''  # Начинаем новый цикл перевода
 
         # Если остался непереведённый текст в current_text
         if current_text:
-            ta.ic('last:')
-            ta.ic(current_text)
+            ta.ic('Full section translated')
+            #
             translated_paragraph = ta.translate(source_lang, target_lang, current_text, country)
             translated_chapter['paragraphs'].append(translated_paragraph)
 
@@ -171,7 +175,7 @@ if __name__ == '__main__':
     # 3 Переводчики (с передачей system\add promt
     # Translate meta
 
-    '''
+
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_title = executor.submit(translate_title)
         future_annotation = executor.submit(translate_annotation)
@@ -193,7 +197,7 @@ if __name__ == '__main__':
     ta.ic(new_book.titleInfo.annotation)
     ta.ic(new_book.titleInfo.authors)
     ta.ic(new_book.titleInfo.genres)
-    '''
+
 
     # Improve pictures
 
@@ -204,7 +208,7 @@ if __name__ == '__main__':
     new_book.chapters = process_chapters(chapters,source_lang, target_lang, country, max_len_chunk, max_len_paragraph)
 
     # Сборщик книги в основной цикл
-    new_book.write(f"./books/out_tst.fb2")
+    new_book.write(f"./books/{target_lang}_{fb2file}.fb2")
 
 
 
