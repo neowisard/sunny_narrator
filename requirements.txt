@@ -1,0 +1,7 @@
+ET
+icecream
+python-dotenv
+pathlib
+openai
+tiktoken
+langchain-text-splitters

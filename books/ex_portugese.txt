@@ -1,0 +1,36 @@
+Sunny Narrator é uma versão inicial de um tradutor de IA para textos longos, como livros em formato FB2 (EPUB) ou TXT. Como resultado, obtém-se um texto bem legível. Nesses casos, em alguns capítulos, o gênero do personagem pode mudar acidentalmente se não estiver claro, além de permanecerem alguns artefatos. A tradução é realizada em várias etapas, utilizando diferentes processos (tradução, correção de tradução, revisão), e quase sempre precisa de revisão e correção humana.
+
+Os prompts para a tradução estão no arquivo .libs/llm.py em inglês e, para uso com Qwen/Deepseek, devem ser reescritos em chinês.
+
+**Para usar o tradutor, você precisa de:**
+
+1. Endereço do host e chave de API tipo OpenAI (ou seja, você pode executar o llama.cpp localmente ou usar o endereço e a chave da OpenAI, Claude, etc.).
+2. Arquivo FB2 ou TXT. Se você tiver um arquivo EPUB, use a conversão online para FB2. Se não precisar traduzir um livro, use o arquivo TXT.
+3. Programa em execução (docker ou Python instalado).
+
+A tradução é realizada em 4 passagens e pode exigir uma grande quantidade de tokens e tempo, geralmente três vezes mais tokens na entrada e saída do que todo o texto.
+
+**Parâmetros** (/config/.env) ou docker .env:
+
+1. Idiomas de destino e de origem: especifique os idiomas de destino e de origem.
+2. O país para o idioma de destino também é importante para considerar aspectos culturais na tradução.
+3. Opcionalmente, podem ser usadas duas redes neurais para a tradução: uma para a tradução e correção e outra para dar *feedback* sobre a tradução e revisão (ou seja, mais otimizada para o idioma de destino). Indique os mesmos parâmetros para ambas as redes neurais se você tiver apenas uma, ou indique `API_BASE2` para uma rede mais inteligente ou otimizada para o idioma de destino. Eu uso o llama.cpp localmente e executo o mistral24 instruct para a tradução principal e o gemma27 it para a revisão. A 10 tokens por segundo, a tradução de livros com texto de cerca de 500 KB leva um dia.
+4. Tente indicar o tamanho máximo do *chunk* não superior a 16000 (em bytes) e, ao mesmo tempo, duas vezes menor que o máximo para essa rede neural. De acordo com relatórios de 25/05, a qualidade da resposta se degrada ligeiramente (alguns por cento) em um tamanho de contexto superior a 8 mil tokens.
+5. VOCAB não funciona temporariamente. No parâmetro VOCAB, são indicados pares para tradução preferencial na forma `source_lang=target_lang`.
+
+**Execução**
+
+Indique os parâmetros para a tradução no arquivo .env e execute o programa:
+
+```bash
+python app.py
+```
+
+Ao rodar pela primeira vez, verifique o funcionamento do programa em um arquivo com não mais de cem palavras.
+
+**Agradecimentos** ao [POC](https://github.com/andrewyng/translation-agent) pela tradução automática de FB2 via agente de tradução LLM.
+
+QWEN – Qwen_Coder32B é maravilhoso.
+
+Foi feito por diversão e para uso doméstico. Com isso, dá para criar um produto real e há dezenas de ideias para melhorar a qualidade da tradução. Embora já existam serviços comerciais para isso, como www.inotherword.ai, para uso comercial, é necessário criar um *software* real via Java, Kafka/RabbitMQ, Postgres, Minio, algumas LLMs especializadas, o que pode ser caro (3 a 6 meses e alguns milhares de dólares).
+

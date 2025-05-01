@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+    <description>
+        <title-info>
+            <genre>sf</genre>
+            <genre>sf_fantasy</genre>
+            <genre>shortstory</genre>
+            <author>
+                <nickname>Ae_Mc</nickname>
+                <first-name>Alex</first-name>
+                <middle-name>Unknown</middle-name>
+                <home-page>ae-mc.ru</home-page>
+                <email>ae_mc@mail.ru</email>
+            </author>https://huggingface.co/bartowski/Qwen_Qwen3-32B-GGUF/resolve/main/Qwen_Qwen3-32B-Q5_K_M.gguf
+            <book-title>Example book</book-title>
+            <annotation>
+                <p>Small test book. Shows basics of FB2 library</p>
+            </annotation>
+            <lang>en</lang>
+            <sequence name="Example books" number="2"/>
+        </title-info>
+        <document-info>
+            <author>
+                <first-name>Ae</first-name>
+                <last-name>Mc</last-name>
+            </author>
+            <program-used>Ae-Mc's FB2 library</program-used>
+            <date value="2024-12-03">03.12.2024</date>
+            <id>6ec8434a-cb39-40b8-bfed-b64e3845692a</id>
+            <version>1.1</version>
+        </document-info>
+    </description>
+    ```xml
+<TRANSLETION>
+<body><title>
+    <p>Образец книги</p>
+</title>
+<section>
+    <title>
+        <p>Введение</p>
+    </title>
+    <p>Первый абзац вводного раздела</p>
+    <p>Второй абзац вводного раздела</p>
+</section>
+<section>
+    <title>
+        <p>Глава первая. История формата FB2</p>
+    </title>
+    <p>Первый абзац вводного раздела</p>
+    <p>Второй абзац главы первой</p>
+</section>
+<section>
+    <title>
+        <p>Пустая глава</p>
+    </title>
+    <p>Пустой раздел</p>
+</section>
+</body>
+</TRANSLETION>
+```
+
+</FictionBook>

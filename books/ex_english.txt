@@ -1,0 +1,36 @@
+Sunny Narrator is an early-stage AI translator for long texts, such as books in FB2, EPUB, or TXT format. The result is a reasonably readable text. However, for some languages, a character’s gender may accidentally switch in different chapters if it’s not clearly established, and some artifacts may remain. The translation is performed in multiple passes using different roles (translation, translation corrections, and proofreading), and it almost always needs human proofreading and editing as well. Prompts for translation are located in the `.libs/llm.py` file in English, and for use with Qwen/Deepseek, they should be rewritten in Chinese.
+
+**To use the translator, you’ll need:**
+1. A host address and API key for an OpenAI-compatible API (i.e., you can locally run llama.cpp or use the address and key for OpenAI, Claude, etc.).
+2. An FB2 or TXT file. If you have an EPUB file, use an online conversion tool to convert it to FB2. If you don't have specific requirements for translating a book, a TXT file is sufficient.
+3. A running program (Docker or installed Python).
+
+Translation is performed in four passes and may require a large number of tokens and time—usually three times more tokens for input and output than the entire text.
+
+**Parameters** (`/config/.env` or Docker `.env`)
+1. Target and source language: the target and source languages.
+2. The country for the target language is also important to specify to adhere to the nuances of cultural context during translation.
+3. Optionally, two neural networks can be used for translation: one for direct translation and corrections, and the second for evaluating translation quality and proofreading (i.e., optimized for the target language). Specify the same parameters for both neural networks if you only have one, or specify `API_BASE2` for a smarter or more optimized neural network for the target language.
+   I use llama.cpp locally and run Mistral 24 Instruct for the main translation and Gemma 27B for proofreading. At a speed of 10 tokens/second, translating books with text around 500KB takes a day.
+4. Try to specify a maximum chunk size of no more than 16000 bytes, and half that amount for the neural network.
+   As of May 25th, the quality of the response slightly degrades (by a few percent) at a context length of more than 8,000 tokens.
+5. The `//vocab` feature is temporarily broken. The `VOCAB` parameter specifies preferred translation pairs in the form of `source_lang=target_lang`.
+
+**Launch**
+
+Set the translation parameters in the `.env` file and run the program:
+```
+python app.py
+```
+On the first run, test the program on a file with no more than a hundred words.
+
+**Thanks**
+Thanks to [POC](https://github.com/andrewyng/translation-agent) for automated FB2 translation via LLM translation agents.
+Qwen – Qwen_Coder32B is wonderful.
+
+**For your information**
+This was made for fun and home use. This small project could become a real product, and there are dozens of ideas for improving translation quality. Although commercial services already exist, such as www.inotherword.ai, creating a robust commercial application requires Java, Kafka/RabbitMQ, Postgres, Minio, several specialized LLMs, and can be costly (3–6 months and a few thousand dollars).
+
+
+
+
